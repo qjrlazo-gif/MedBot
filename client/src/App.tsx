@@ -1,35 +1,43 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
+import Dashboard from './pages/Dashboard';
+import TaskQueue from './pages/TaskQueue';
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+const customTheme = createTheme({
+	palette: {
+		primary: {
+			main: "#3513e1",
+		},
+	},
+});
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+function App() {
+	const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks'>('dashboard');
+	const [sidebarOpen, setSidebarOpen] = useState(false);
+
+	return (
+		<ThemeProvider theme={customTheme}>
+			<div className="app">
+				<Sidebar activeTab={activeTab} setActiveTab={setActiveTab} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+				<div className="main-content">
+					<Header title={activeTab === 'dashboard' ? 'Dashboard' : 'Task Queue'} />
+					{
+						(() => {
+							switch(activeTab) {
+								case 'tasks':
+									return <TaskQueue />;
+								default:
+									return <Dashboard setActiveTab={setActiveTab} />;
+							}
+						})()
+					}
+				</div>
+			</div>
+		</ThemeProvider>
+	)
 }
 
 export default App
