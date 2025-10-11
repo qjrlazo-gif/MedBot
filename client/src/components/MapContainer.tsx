@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { getDatabase, ref, onValue } from 'firebase/database';
 import { getFirestore } from 'firebase/firestore';
@@ -20,76 +20,105 @@ function MapContainer() {
 	const [path, setPath] = useState<Point[]>([]);
 	const [task, setTask] = useState<Task | null>(null);
 	const [loading, setLoading] = useState(true);
+	const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
 
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+	const isDraggingRef = useRef(false);
+	const lastPosRef = useRef({ x: 0, y: 0 });
+
+	// Firebase listener on mount
 	useEffect(() => {
-		
-		const fetchData = async () => {
-			try {
-				console.log("Fetching robot data...");
-				const db = getDatabase();
-				const fs = getFirestore();
-			
-				// Step 1: Listen to robot state from Realtime DB
-				const robotRef = ref(db, '/');
-				const unsubscribeRealtime = onValue(robotRef, async (snapshot) => {
-					const data = snapshot.val();
-					console.log("Realtime data:", data);
+		const db = getDatabase();
+		const fs = getFirestore();
+		const robotRef = ref(db, '/');
+		const currentMapId = {value: null};
 
-					if (data) {
-						setPosition(data.position);
-						setPath(data.path || []);
-						setTask(data.task);
+		// Realtime Database listener
+		const unsubscribeRealtime = onValue(robotRef, async (snapshot) => {
+			const data = snapshot.val();
+			if (!data) return;
 
-						// Step 2: Fetch map info from Firestore (once per map change)
-						if (data.mapId) {
-							console.log("Fetching map:", data.mapId);
-							const mapDoc = await getDoc(doc(fs, 'maps', data.mapId));
-							if (mapDoc.exists()) {
-								console.log("Map data:", mapDoc.data());
-								setMapData(mapDoc.data() as MapData);
-							} else {
-								console.warn("Map not found!");
-							}
-						}
+			setPosition(data.position);
+			setPath(data.path || []);
+			setTask(data.task);
+
+			// Fetch Firestore map only when mapId changes
+			if (data.mapId && data.mapId !== currentMapId.value) {
+				currentMapId.value = data.mapId;
+
+				try {
+					// Get map document from Firestore collection maps named 'temp-map' (data.mapId)
+					const mapDoc = await getDoc(doc(fs, 'maps', data.mapId));
+
+					if (mapDoc.exists()) {
+						setMapData(mapDoc.data() as MapData);
+					} else {
+						console.warn("Map not found!");
 					}
-					setLoading(false);
-				});
 
-				// Cleanup listener when unmounting
-				return () => unsubscribeRealtime();
-
-			} catch (err) {
-				console.error("Error fetching data:", err);
-				setLoading(false);
-				return;
+				} catch (err) {
+					console.error("Error fetching map: ", err);
+				}
 			}
+
+			// Set state to 'finished loading'
+			setLoading(false);
+		});
+
+		// Cleanup when component unmounts
+		return () => {
+			console.log("Cleaning up Firebase Listener...");
+			unsubscribeRealtime();
 		};
+	}, []);
 
-		fetchData();
+	// Drawing Logic
 
+	const draw = useCallback(() => {
 		const canvas = canvasRef.current;
-		if (!canvas) return;
+		if (!canvas || !mapData) return;
 
-		const ctx = canvas.getContext("2d");
+		const ctx = canvas.getContext('2d');
 		if (!ctx) return;
 
-		// Clear previous drawings
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		// Clear canvas
+		const { width, height } = canvas;
+		ctx.clearRect(0, 0, width, height);
+
+		ctx.save();
+
+		// --- Draw grid ---
+		const gridSize = 50;
+		ctx.strokeStyle = '#d8d8d8ff';
+		ctx.lineWidth = 1;
+
+		for (let x = (offset.x % gridSize); x < width; x += gridSize) {
+			
+			ctx.beginPath();
+			ctx.moveTo(x, 0);
+			ctx.lineTo(x, height);
+			ctx.stroke();
+		}
+		for (let y = (offset.y % gridSize); y < height; y += gridSize) {
+			ctx.beginPath();
+			ctx.moveTo(0, y);
+			ctx.lineTo(width, y);
+			ctx.stroke();
+		}
+
+		ctx.translate(offset.x, offset.y); // Apply map offset
 
 		// --- Draw walls ---
-		if (mapData) {
-			ctx.fillStyle = "#888";
-			mapData.walls.forEach(({ x, y, w, h }) => {
+		ctx.fillStyle = '#888';
+		mapData.walls.forEach(({ x, y, w, h }) => {
 			ctx.fillRect(x, y, w, h);
-			});
-		}
-		
+		});
+
 		// --- Draw path ---
 		if (path.length > 0) {
-			ctx.strokeStyle = "blue";
-			ctx.lineWidth = 4;
+			ctx.strokeStyle = 'blue';
+			ctx.lineWidth = 3;
 			ctx.beginPath();
 			path.forEach((p, i) => {
 				if (i === 0) ctx.moveTo(p.x, p.y);
@@ -100,12 +129,12 @@ function MapContainer() {
 
 		// --- Draw destination ---
 		if (task) {
-			ctx.fillStyle = "blue";
+			ctx.fillStyle = 'blue';
 			ctx.beginPath();
 			ctx.arc(task.destination.x, task.destination.y, 8, 0, Math.PI * 2);
 			ctx.fill();
 
-			ctx.fillStyle = "white";
+			ctx.fillStyle = 'white';
 			ctx.beginPath();
 			ctx.arc(task.destination.x, task.destination.y, 4, 0, Math.PI * 2);
 			ctx.fill();
@@ -113,22 +142,86 @@ function MapContainer() {
 
 		// --- Draw robot ---
 		if (position) {
-			ctx.fillStyle = "red";
+			ctx.fillStyle = 'red';
 			ctx.beginPath();
 			ctx.arc(position.x, position.y, 8, 0, Math.PI * 2);
 			ctx.fill();
 
-			ctx.fillStyle = "white";
+			ctx.fillStyle = 'white';
 			ctx.beginPath();
 			ctx.arc(position.x, position.y, 4, 0, Math.PI * 2);
 			ctx.fill();
 		}
-	}, [mapData?.walls, path, position]); // redraw whenever data changes
+
+		ctx.restore();
+	}, [mapData, path, position, task, offset]);
+
+	useEffect(() => {
+		draw();
+	}, [draw, offset, mapData, path, position, task]);
+		
+	// --- Resize and redraw on window resize ---
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) {
+			return;
+		}
+
+		const container = canvas.parentElement;
+		if (!container) return;
+
+		const resizeCanvas = () => {
+			canvas.width = container.clientWidth;
+			canvas.height = container.clientHeight;
+			draw(); // Safe since draw is stable via useCallback
+		};
+
+		resizeCanvas();
+		window.addEventListener('resize', resizeCanvas);
+		return () => window.removeEventListener('resize', resizeCanvas);
+	}, [mapData]);
+
+	// --- Drag-to-pan functionality ---
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+
+		const handleMouseDown = (e: MouseEvent) => {
+			isDraggingRef.current = true;
+			lastPosRef.current = { x: e.clientX, y: e.clientY };
+		};
+
+		const handleMouseMove = (e: MouseEvent) => {
+			if (!isDraggingRef.current) return;
+
+			const dx = e.clientX - lastPosRef.current.x;
+			const dy = e.clientY - lastPosRef.current.y;
+
+			setOffset(prev => ({
+				x: prev.x + dx,
+				y: prev.y + dy,
+			}));
+			lastPosRef.current = { x: e.clientX, y: e.clientY };
+		};
+
+		const handleMouseUp = () => {
+			isDraggingRef.current = false;
+		};
+
+		canvas.addEventListener('mousedown', handleMouseDown);
+		window.addEventListener('mousemove', handleMouseMove);
+		window.addEventListener('mouseup', handleMouseUp);
+
+		return () => {
+			canvas.removeEventListener('mousedown', handleMouseDown);
+			window.removeEventListener('mousemove', handleMouseMove);
+			window.removeEventListener('mouseup', handleMouseUp);
+		};
+	}, [mapData]);
 
 	return (
-		<div className="widget map-container">
+		<div className="widget map-container light-shadow">
 			<h1>Robot Location</h1>
-
 			{
 				loading ? (<p>Loading data...</p>) : !mapData ? (<p>No map data available</p>) : (
 					<div className="map-visual">
@@ -136,11 +229,8 @@ function MapContainer() {
 						ref={canvasRef}
 						width={mapData.width}
 						height={mapData.height}
-						style={{
-							border: "none",
-							backgroundColor: "#f9f9f9",
-						}}
-      />
+						
+						/>
 					</div>
 				)
 			}
