@@ -4,6 +4,12 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
 import TaskQueue from './pages/TaskQueue';
+import RobotMap from './pages/RobotMap';
+import Monitoring from './pages/Monitoring';
+import Reports from './pages/Reports';
+import Settings from './pages/Settings';
+import Help from './pages/Help';
+import Logout from './pages/Logout';
 import './App.css'
 
 const customTheme = createTheme({
@@ -15,7 +21,7 @@ const customTheme = createTheme({
 });
 
 function App() {
-	const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks'>('dashboard');
+	const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'robot-map' | 'monitoring' | 'reports' | 'settings' | 'help' | 'logout'>('dashboard');
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 
 	return (
@@ -23,17 +29,41 @@ function App() {
 			<div className="app">
 				<Sidebar activeTab={activeTab} setActiveTab={setActiveTab} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 				<div className="main-content">
-					<Header title={activeTab === 'dashboard' ? 'Dashboard' : 'Task Queue'} />
-					{
-						(() => {
-							switch(activeTab) {
-								case 'tasks':
-									return <TaskQueue />;
-								default:
-									return <Dashboard setActiveTab={setActiveTab} />;
-							}
-						})()
+					<Header title={(() => {
+					switch(activeTab) {
+						case 'dashboard': return 'Dashboard';
+						case 'tasks': return 'Task Queue';
+						case 'robot-map': return 'Robot Map';
+						case 'monitoring': return 'Monitoring';
+						case 'reports': return 'Reports';
+						case 'settings': return 'Settings';
+						case 'help': return 'Help';
+						case 'logout': return 'Log out';
+						default: return 'Dashboard';
 					}
+				})()} />
+				{
+					(() => {
+						switch(activeTab) {
+							case 'tasks':
+								return <TaskQueue />;
+							case 'robot-map':
+								return <RobotMap />;
+							case 'monitoring':
+								return <Monitoring />;
+							case 'reports':
+								return <Reports />;
+							case 'settings':
+								return <Settings />;
+							case 'help':
+								return <Help />;
+							case 'logout':
+								return <Logout />;
+							default:
+								return <Dashboard setActiveTab={setActiveTab} />;
+						}
+					})()
+				}
 				</div>
 			</div>
 		</ThemeProvider>

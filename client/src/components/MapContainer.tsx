@@ -90,7 +90,7 @@ function MapContainer() {
 
 		// --- Draw grid ---
 		const gridSize = 50;
-		ctx.strokeStyle = '#d8d8d8ff';
+		ctx.strokeStyle = '#e9ecef';
 		ctx.lineWidth = 1;
 
 		for (let x = (offset.x % gridSize); x < width; x += gridSize) {
@@ -110,46 +110,56 @@ function MapContainer() {
 		ctx.translate(offset.x, offset.y); // Apply map offset
 
 		// --- Draw walls ---
-		ctx.fillStyle = '#888';
+		ctx.fillStyle = '#6c757d';
 		mapData.walls.forEach(({ x, y, w, h }) => {
 			ctx.fillRect(x, y, w, h);
 		});
 
 		// --- Draw path ---
 		if (path.length > 0) {
-			ctx.strokeStyle = 'blue';
-			ctx.lineWidth = 3;
+			ctx.strokeStyle = '#3513e1';
+			ctx.lineWidth = 4;
+			ctx.lineCap = 'round';
+			ctx.lineJoin = 'round';
 			ctx.beginPath();
 			path.forEach((p, i) => {
 				if (i === 0) ctx.moveTo(p.x, p.y);
 				else ctx.lineTo(p.x, p.y);
 			});
 			ctx.stroke();
+			
+			// Draw path points
+			ctx.fillStyle = '#3513e1';
+			path.forEach((p, i) => {
+				ctx.beginPath();
+				ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+				ctx.fill();
+			});
 		}
 
 		// --- Draw destination ---
 		if (task) {
-			ctx.fillStyle = 'blue';
+			ctx.fillStyle = '#28a745';
 			ctx.beginPath();
-			ctx.arc(task.destination.x, task.destination.y, 8, 0, Math.PI * 2);
+			ctx.arc(task.destination.x, task.destination.y, 10, 0, Math.PI * 2);
 			ctx.fill();
 
 			ctx.fillStyle = 'white';
 			ctx.beginPath();
-			ctx.arc(task.destination.x, task.destination.y, 4, 0, Math.PI * 2);
+			ctx.arc(task.destination.x, task.destination.y, 6, 0, Math.PI * 2);
 			ctx.fill();
 		}
 
 		// --- Draw robot ---
 		if (position) {
-			ctx.fillStyle = 'red';
+			ctx.fillStyle = '#dc3545';
 			ctx.beginPath();
-			ctx.arc(position.x, position.y, 8, 0, Math.PI * 2);
+			ctx.arc(position.x, position.y, 10, 0, Math.PI * 2);
 			ctx.fill();
 
 			ctx.fillStyle = 'white';
 			ctx.beginPath();
-			ctx.arc(position.x, position.y, 4, 0, Math.PI * 2);
+			ctx.arc(position.x, position.y, 6, 0, Math.PI * 2);
 			ctx.fill();
 		}
 
