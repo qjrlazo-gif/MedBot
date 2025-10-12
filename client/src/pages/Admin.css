@@ -1,0 +1,150 @@
+.admin-page {
+  padding: 24px;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  background-color: #ffffff;
+  min-height: 100vh;
+  position: relative;
+}
+
+.admin-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.admin-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0 0 8px 0;
+}
+
+.admin-header p {
+  font-size: 16px;
+  color: #718096;
+  margin: 0;
+}
+
+.admin-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 32px;
+  padding: 8px;
+  background: #f7fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 600;
+  color: #718096;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.tab-button:hover {
+  background: rgba(53, 19, 225, 0.1);
+  color: #3513e1;
+  transform: translateY(-1px);
+}
+
+.tab-button.active {
+  background: #3513e1;
+  color: white;
+  box-shadow: 0 4px 12px rgba(53, 19, 225, 0.3);
+}
+
+.tab-icon {
+  font-size: 16px;
+}
+
+.tab-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  min-height: 600px;
+  background-color: #ffffff;
+}
+
+/* Access Denied Styles */
+.access-denied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  padding: 40px 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin: 40px;
+}
+
+.access-denied h2 {
+  font-size: 24px;
+  color: #e53e3e;
+  margin: 0 0 16px 0;
+}
+
+.access-denied p {
+  font-size: 16px;
+  color: #718096;
+  margin: 8px 0;
+  max-width: 500px;
+  line-height: 1.5;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-page {
+    padding: 16px;
+  }
+  
+  .admin-tabs {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .tab-button {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .admin-header h1 {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-button {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+  
+  .tab-icon {
+    font-size: 14px;
+  }
+  
+  .tab-label {
+    font-size: 13px;
+  }
+}

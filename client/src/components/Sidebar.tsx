@@ -1,6 +1,5 @@
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ViewListIcon from '@mui/icons-material/ViewList';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import MapIcon from '@mui/icons-material/Map';
 import MonitoringIcon from '@mui/icons-material/MonitorHeart';
 import AssessmentIcon from '@mui/icons-material/Assessment';
@@ -8,16 +7,21 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import HelpIcon from '@mui/icons-material/Help';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-type Tabs = 'dashboard' | 'tasks' | 'robot-map' | 'monitoring' | 'reports' | 'settings' | 'help' | 'logout';
+import PeopleIcon from '@mui/icons-material/People';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import type { UserProfile } from '../contexts/AuthContext';
+
+type Tabs = 'dashboard' | 'tasks' | 'robot-map' | 'monitoring' | 'reports' | 'settings' | 'help' | 'logout' | 'admin' | 'robot-simulator';
 
 type SidebarProps = {
 	activeTab: Tabs;
 	setActiveTab: (tab: Tabs) => void;
 	sidebarOpen: boolean;
 	setSidebarOpen: (open: boolean) => void;
+	userProfile?: UserProfile | null;
 };
 
-function Sidebar({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen }: SidebarProps) {
+function Sidebar({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, userProfile }: SidebarProps) {
 	const getIcon = (icon: Tabs) => {
 		switch(icon) {
 			case 'dashboard':
@@ -36,6 +40,10 @@ function Sidebar({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen }: Sideb
 				return <HelpIcon fontSize='large' />;
 			case 'logout':
 				return <LogoutIcon fontSize='large' />;
+			case 'admin':
+				return <PeopleIcon fontSize='large' />;
+			case 'robot-simulator':
+				return <SmartToyIcon fontSize='large' />;
 			default:
 				return <ErrorOutlineIcon fontSize='large' />
 		}
@@ -67,6 +75,16 @@ function Sidebar({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen }: Sideb
 				{getTabDisplay("Reports", 'reports')}
 			</button>
 			<div className="sidebar-separator"></div>
+			{userProfile?.role === 'admin' && (
+				<>
+					<button onClick={() => setActiveTab('admin')} className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`}>
+						{getTabDisplay("Admin Panel", 'admin')}
+					</button>
+					<button onClick={() => setActiveTab('robot-simulator')} className={`tab-btn ${activeTab === 'robot-simulator' ? 'active' : ''}`}>
+						{getTabDisplay("Robot Simulator", 'robot-simulator')}
+					</button>
+				</>
+			)}
 			<button onClick={() => setActiveTab('settings')} className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}>
 				{getTabDisplay("Settings", 'settings')}
 			</button>

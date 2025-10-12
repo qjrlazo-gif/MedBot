@@ -130,7 +130,7 @@ function MapContainer() {
 			
 			// Draw path points
 			ctx.fillStyle = '#3513e1';
-			path.forEach((p, i) => {
+			path.forEach((p) => {
 				ctx.beginPath();
 				ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
 				ctx.fill();

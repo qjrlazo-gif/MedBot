@@ -7,7 +7,6 @@ import MyLocationIcon from '@mui/icons-material/MyLocation';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
-import InfoIcon from '@mui/icons-material/Info';
 
 interface RobotData {
   position: { x: number; y: number };

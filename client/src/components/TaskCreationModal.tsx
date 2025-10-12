@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import AddIcon from '@mui/icons-material/Add';
+import { useState, useEffect } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 
 interface TaskCreationModalProps {
   isOpen: boolean;
@@ -17,7 +18,7 @@ interface TaskFormData {
   notes: string;
 }
 
-const MEDICAL_SUPPLIES = [
+const DEFAULT_MEDICAL_SUPPLIES = [
   'Syringes (5ml)',
   'Bandages',
   'Morphine 10mg',
@@ -28,13 +29,7 @@ const MEDICAL_SUPPLIES = [
   'Thermometer'
 ];
 
-const SOURCE_LOCATIONS = [
-  'Supply Room',
-  'Pharmacy',
-  'Storage Room'
-];
-
-const DESTINATION_ROOMS = [
+const DEFAULT_DESTINATION_ROOMS = [
   'Room A1',
   'Room A2',
   'Room A3',
@@ -43,6 +38,19 @@ const DESTINATION_ROOMS = [
   'ICU',
   'Emergency Room'
 ];
+
+interface Supply {
+  id: string;
+  name: string;
+  category: string;
+}
+
+interface Room {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+}
 
 function TaskCreationModal({ isOpen, onClose, onSubmit }: TaskCreationModalProps) {
   const [formData, setFormData] = useState<TaskFormData>({
@@ -53,6 +61,47 @@ function TaskCreationModal({ isOpen, onClose, onSubmit }: TaskCreationModalProps
     priority: 'NORMAL',
     notes: ''
   });
+
+  const [supplies, setSupplies] = useState<Supply[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Fetch supplies and rooms when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchData();
+    }
+  }, [isOpen]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      // Fetch supplies
+      const suppliesSnapshot = await getDocs(collection(db, 'supplies'));
+      const suppliesData = suppliesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Supply));
+      setSupplies(suppliesData);
+
+      // Fetch rooms
+      const roomsSnapshot = await getDocs(collection(db, 'rooms'));
+      const roomsData = roomsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Room));
+      setRooms(roomsData);
+
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load supplies and rooms data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSupplyToggle = (supply: string) => {
     setFormData(prev => ({
@@ -111,66 +160,105 @@ function TaskCreationModal({ isOpen, onClose, onSubmit }: TaskCreationModalProps
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="task-form">
-          <div className="form-section">
-            <h3>Nurse Information</h3>
-            <input
-              type="text"
-              placeholder="Enter nurse name *"
-              value={formData.nurseName}
-              onChange={(e) => setFormData(prev => ({ ...prev, nurseName: e.target.value }))}
-              required
-              className="form-input"
-            />
+        {error && (
+          <div className="error-message">
+            {error}
+            <button onClick={() => setError('')}>×</button>
           </div>
+        )}
 
-          <div className="form-section">
-            <h3>Medical Supplies</h3>
-            <div className="supply-grid">
-              {MEDICAL_SUPPLIES.map(supply => (
-                <button
-                  key={supply}
-                  type="button"
-                  className={`supply-btn ${formData.selectedSupplies.includes(supply) ? 'selected' : ''}`}
-                  onClick={() => handleSupplyToggle(supply)}
-                >
-                  {supply}
-                </button>
-              ))}
-            </div>
+        {loading ? (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading supplies and rooms...</p>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="task-form">
+            <div className="form-section">
+              <h3>Nurse Information</h3>
+              <input
+                type="text"
+                placeholder="Enter nurse name *"
+                value={formData.nurseName}
+                onChange={(e) => setFormData(prev => ({ ...prev, nurseName: e.target.value }))}
+                required
+                className="form-input"
+              />
+            </div>
 
-          <div className="form-section">
-            <h3>Source Location</h3>
-            <div className="location-row">
-              {SOURCE_LOCATIONS.map(location => (
-                <button
-                  key={location}
-                  type="button"
-                  className={`location-btn ${formData.sourceLocation === location ? 'selected' : ''}`}
-                  onClick={() => setFormData(prev => ({ ...prev, sourceLocation: location }))}
-                >
-                  {location}
-                </button>
-              ))}
+            <div className="form-section">
+              <h3>Medical Supplies</h3>
+              <div className="supply-grid">
+                {/* Default Supplies */}
+                {DEFAULT_MEDICAL_SUPPLIES.map(supply => (
+                  <button
+                    key={`default-${supply}`}
+                    type="button"
+                    className={`supply-btn default ${formData.selectedSupplies.includes(supply) ? 'selected' : ''}`}
+                    onClick={() => handleSupplyToggle(supply)}
+                  >
+                    {supply}
+                  </button>
+                ))}
+                
+                {/* Admin-Added Supplies */}
+                {supplies.map(supply => (
+                  <button
+                    key={`admin-${supply.id}`}
+                    type="button"
+                    className={`supply-btn admin ${formData.selectedSupplies.includes(supply.name) ? 'selected' : ''}`}
+                    onClick={() => handleSupplyToggle(supply.name)}
+                  >
+                    {supply.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="form-section">
-            <h3>Destination Rooms</h3>
-            <div className="room-grid">
-              {DESTINATION_ROOMS.map(room => (
-                <button
-                  key={room}
-                  type="button"
-                  className={`room-btn ${formData.destinationRooms.includes(room) ? 'selected' : ''}`}
-                  onClick={() => handleDestinationToggle(room)}
-                >
-                  {room}
-                </button>
-              ))}
+            <div className="form-section">
+              <h3>Source Location</h3>
+              <div className="location-row">
+                {['Supply Room', 'Pharmacy', 'Storage Room'].map(location => (
+                  <button
+                    key={location}
+                    type="button"
+                    className={`location-btn ${formData.sourceLocation === location ? 'selected' : ''}`}
+                    onClick={() => setFormData(prev => ({ ...prev, sourceLocation: location }))}
+                  >
+                    {location}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+
+            <div className="form-section">
+              <h3>Destination Rooms</h3>
+              <div className="room-grid">
+                {/* Default Rooms */}
+                {DEFAULT_DESTINATION_ROOMS.map(room => (
+                  <button
+                    key={`default-${room}`}
+                    type="button"
+                    className={`room-btn default ${formData.destinationRooms.includes(room) ? 'selected' : ''}`}
+                    onClick={() => handleDestinationToggle(room)}
+                  >
+                    {room}
+                  </button>
+                ))}
+                
+                {/* Admin-Added Rooms */}
+                {rooms.filter(room => room.status === 'available').map(room => (
+                  <button
+                    key={`admin-${room.id}`}
+                    type="button"
+                    className={`room-btn admin ${formData.destinationRooms.includes(room.name) ? 'selected' : ''}`}
+                    onClick={() => handleDestinationToggle(room.name)}
+                  >
+                    {room.name}
+                  </button>
+                ))}
+              </div>
+            </div>
 
           <div className="form-section">
             <h3>Priority</h3>
@@ -203,10 +291,11 @@ function TaskCreationModal({ isOpen, onClose, onSubmit }: TaskCreationModalProps
             />
           </div>
 
-          <button type="submit" className="submit-btn">
-            Submit Delivery Request
-          </button>
-        </form>
+            <button type="submit" className="submit-btn">
+              Submit Delivery Request
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );
