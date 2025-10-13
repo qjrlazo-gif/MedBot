@@ -2,6 +2,7 @@ import MapContainer from '../components/MapContainer';
 import BatteryWidget from '../components/BatteryWidget';
 import TaskWidget from '../components/TaskWidget';
 import RobotStatusWidget from '../components/RobotStatusWidget';
+import RobotSimulationControl from '../components/RobotSimulationControl';
 
 
 type DashboardProps = {
@@ -17,6 +18,7 @@ function Dashboard({ setActiveTab }: DashboardProps) {
 			</div>
 			<MapContainer />
 			<RobotStatusWidget />
+			<RobotSimulationControl />
 		</div>
 	);
 }

@@ -8,13 +8,8 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
 import TaskQueue from './pages/TaskQueue';
-import RobotMap from './pages/RobotMap';
-import Monitoring from './pages/Monitoring';
-import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Help from './pages/Help';
-import Admin from './pages/Admin';
-import RobotSimulator from './pages/RobotSimulator';
 import './App.css'
 
 const customTheme = createTheme({
@@ -26,7 +21,7 @@ const customTheme = createTheme({
 });
 
 function AppContent() {
-	const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'robot-map' | 'monitoring' | 'reports' | 'settings' | 'help' | 'logout' | 'admin' | 'robot-simulator'>('dashboard');
+	const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'settings' | 'help' | 'logout'>('dashboard');
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const { userProfile, logout } = useAuth();
 
@@ -44,7 +39,6 @@ function AppContent() {
 				setActiveTab={setActiveTab} 
 				sidebarOpen={sidebarOpen} 
 				setSidebarOpen={setSidebarOpen}
-				userProfile={userProfile}
 			/>
 			<div className="main-content">
 				<Header 
@@ -52,13 +46,8 @@ function AppContent() {
 						switch(activeTab) {
 							case 'dashboard': return 'Dashboard';
 							case 'tasks': return 'Task Queue';
-							case 'robot-map': return 'Robot Map';
-							case 'monitoring': return 'Monitoring';
-							case 'reports': return 'Reports';
 							case 'settings': return 'Settings';
 							case 'help': return 'Help';
-							case 'admin': return 'Admin Panel';
-							case 'robot-simulator': return 'Robot Simulator';
 							default: return 'Dashboard';
 						}
 					})()}
@@ -70,20 +59,10 @@ function AppContent() {
 						switch(activeTab) {
 							case 'tasks':
 								return <ProtectedRoute><TaskQueue /></ProtectedRoute>;
-							case 'robot-map':
-								return <ProtectedRoute><RobotMap /></ProtectedRoute>;
-							case 'monitoring':
-								return <ProtectedRoute><Monitoring /></ProtectedRoute>;
-							case 'reports':
-								return <ProtectedRoute><Reports /></ProtectedRoute>;
 							case 'settings':
 								return <ProtectedRoute><Settings /></ProtectedRoute>;
 							case 'help':
 								return <ProtectedRoute><Help /></ProtectedRoute>;
-							case 'admin':
-								return <ProtectedRoute requiredRole="admin"><Admin /></ProtectedRoute>;
-							case 'robot-simulator':
-								return <ProtectedRoute requiredRole="admin"><RobotSimulator /></ProtectedRoute>;
 							default:
 								return <ProtectedRoute><Dashboard setActiveTab={setActiveTab} /></ProtectedRoute>;
 						}

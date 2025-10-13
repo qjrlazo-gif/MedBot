@@ -253,8 +253,7 @@ export class FirestoreDB {
   static async updateTaskInQueue(taskId: string, taskData: Partial<TaskData>): Promise<boolean> {
     try {
       await updateDoc(doc(firestore, 'taskQueue', taskId), {
-        ...taskData,
-        updatedAt: new Date().toISOString()
+        ...taskData
       });
       return true;
     } catch (error) {

@@ -186,11 +186,24 @@ const RobotSimulator: React.FC = () => {
     
     const simulationLoop = async () => {
       while (isSimulating && isActive) {
-        // Find next pending task using ref to avoid dependency issues
-        const pendingTask = tasksRef.current.find(task => (task.status || 'in-queue') === 'in-queue');
+        // Find next pending task with priority-based selection
+        const pendingTasks = tasksRef.current.filter(task => (task.status || 'in-queue') === 'in-queue');
         
-        if (pendingTask) {
-          await simulateTask(pendingTask);
+        if (pendingTasks.length > 0) {
+          // Sort by priority (High -> Medium -> Low) and then by timeAdded (oldest first)
+          const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3 };
+          const sortedTasks = pendingTasks.sort((a, b) => {
+            const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+            if (priorityDiff !== 0) {
+              return priorityDiff; // Higher priority first
+            }
+            // If same priority, sort by timeAdded (oldest first)
+            return new Date(a.timeAdded).getTime() - new Date(b.timeAdded).getTime();
+          });
+          
+          const nextTask = sortedTasks[0];
+          console.log('Selected next task based on priority:', nextTask.name, 'Priority:', nextTask.priority, 'Added:', nextTask.timeAdded);
+          await simulateTask(nextTask);
         } else {
           // No pending tasks, wait and check again
           await new Promise(resolve => setTimeout(resolve, 5000));

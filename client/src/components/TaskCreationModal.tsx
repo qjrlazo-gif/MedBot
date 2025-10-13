@@ -7,6 +7,7 @@ interface TaskCreationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (taskData: any) => void;
+  taskType?: 'deliver' | 'go';
 }
 
 interface TaskFormData {
@@ -52,7 +53,7 @@ interface Room {
   status: string;
 }
 
-function TaskCreationModal({ isOpen, onClose, onSubmit }: TaskCreationModalProps) {
+function TaskCreationModal({ isOpen, onClose, onSubmit, taskType = 'deliver' }: TaskCreationModalProps) {
   const [formData, setFormData] = useState<TaskFormData>({
     nurseName: '',
     selectedSupplies: [],
@@ -123,13 +124,23 @@ function TaskCreationModal({ isOpen, onClose, onSubmit }: TaskCreationModalProps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.nurseName || !formData.sourceLocation || formData.destinationRooms.length === 0) {
-      alert('Please fill in all required fields');
-      return;
+    
+    // Different validation based on task type
+    if (taskType === 'deliver') {
+      if (!formData.nurseName || !formData.sourceLocation || formData.destinationRooms.length === 0) {
+        alert('Please fill in all required fields');
+        return;
+      }
+    } else if (taskType === 'go') {
+      if (!formData.nurseName || !formData.sourceLocation) {
+        alert('Please fill in all required fields');
+        return;
+      }
     }
     
     const taskData = {
       ...formData,
+      taskType,
       id: `TASK-${Math.floor(Math.random() * 1000000)}`,
       timestamp: new Date().toLocaleString(),
       status: 'pending'
@@ -153,8 +164,11 @@ function TaskCreationModal({ isOpen, onClose, onSubmit }: TaskCreationModalProps
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Supply Request System</h2>
-          <p>Request robot delivery of medical supplies to patient rooms</p>
+          <h2>{taskType === 'deliver' ? 'Deliver/Fetch' : 'Go'}</h2>
+          <p>{taskType === 'deliver' 
+            ? 'Request robot delivery of medical supplies to patient rooms' 
+            : 'Send robot to a specific location for inspection, maintenance, or other tasks'
+          }</p>
           <button className="close-btn" onClick={onClose}>
             <CloseIcon fontSize="small" />
           </button>
@@ -186,79 +200,103 @@ function TaskCreationModal({ isOpen, onClose, onSubmit }: TaskCreationModalProps
               />
             </div>
 
-            <div className="form-section">
-              <h3>Medical Supplies</h3>
-              <div className="supply-grid">
-                {/* Default Supplies */}
-                {DEFAULT_MEDICAL_SUPPLIES.map(supply => (
-                  <button
-                    key={`default-${supply}`}
-                    type="button"
-                    className={`supply-btn default ${formData.selectedSupplies.includes(supply) ? 'selected' : ''}`}
-                    onClick={() => handleSupplyToggle(supply)}
-                  >
-                    {supply}
-                  </button>
-                ))}
-                
-                {/* Admin-Added Supplies */}
-                {supplies.map(supply => (
-                  <button
-                    key={`admin-${supply.id}`}
-                    type="button"
-                    className={`supply-btn admin ${formData.selectedSupplies.includes(supply.name) ? 'selected' : ''}`}
-                    onClick={() => handleSupplyToggle(supply.name)}
-                  >
-                    {supply.name}
-                  </button>
-                ))}
+            {taskType === 'deliver' && (
+              <div className="form-section">
+                <h3>Medical Supplies</h3>
+                <div className="supply-grid">
+                  {/* Default Supplies */}
+                  {DEFAULT_MEDICAL_SUPPLIES.map(supply => (
+                    <button
+                      key={`default-${supply}`}
+                      type="button"
+                      className={`supply-btn default ${formData.selectedSupplies.includes(supply) ? 'selected' : ''}`}
+                      onClick={() => handleSupplyToggle(supply)}
+                    >
+                      {supply}
+                    </button>
+                  ))}
+                  
+                  {/* Admin-Added Supplies */}
+                  {supplies.map(supply => (
+                    <button
+                      key={`admin-${supply.id}`}
+                      type="button"
+                      className={`supply-btn admin ${formData.selectedSupplies.includes(supply.name) ? 'selected' : ''}`}
+                      onClick={() => handleSupplyToggle(supply.name)}
+                    >
+                      {supply.name}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="form-section">
-              <h3>Source Location</h3>
-              <div className="location-row">
-                {['Supply Room', 'Pharmacy', 'Storage Room'].map(location => (
-                  <button
-                    key={location}
-                    type="button"
-                    className={`location-btn ${formData.sourceLocation === location ? 'selected' : ''}`}
-                    onClick={() => setFormData(prev => ({ ...prev, sourceLocation: location }))}
-                  >
-                    {location}
-                  </button>
-                ))}
+            {taskType === 'deliver' && (
+              <div className="form-section">
+                <h3>Source Location</h3>
+                <div className="location-row">
+                  {['Supply Room', 'Pharmacy', 'Storage Room'].map(location => (
+                    <button
+                      key={location}
+                      type="button"
+                      className={`location-btn ${formData.sourceLocation === location ? 'selected' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, sourceLocation: location }))}
+                    >
+                      {location}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="form-section">
-              <h3>Destination Rooms</h3>
-              <div className="room-grid">
-                {/* Default Rooms */}
-                {DEFAULT_DESTINATION_ROOMS.map(room => (
-                  <button
-                    key={`default-${room}`}
-                    type="button"
-                    className={`room-btn default ${formData.destinationRooms.includes(room) ? 'selected' : ''}`}
-                    onClick={() => handleDestinationToggle(room)}
-                  >
-                    {room}
-                  </button>
-                ))}
-                
-                {/* Admin-Added Rooms */}
-                {rooms.filter(room => room.status === 'available').map(room => (
-                  <button
-                    key={`admin-${room.id}`}
-                    type="button"
-                    className={`room-btn admin ${formData.destinationRooms.includes(room.name) ? 'selected' : ''}`}
-                    onClick={() => handleDestinationToggle(room.name)}
-                  >
-                    {room.name}
-                  </button>
-                ))}
+            {taskType === 'go' && (
+              <div className="form-section">
+                <h3>Destination Location</h3>
+                <div className="location-row">
+                  {['Room A1', 'Room A2', 'Room A3', 'Room B1', 'Room B2', 'ICU', 'Emergency Room', 'Supply Room', 'Pharmacy', 'Storage Room'].map(location => (
+                    <button
+                      key={location}
+                      type="button"
+                      className={`location-btn ${formData.sourceLocation === location ? 'selected' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, sourceLocation: location }))}
+                    >
+                      {location}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+
+            {taskType === 'deliver' && (
+              <div className="form-section">
+                <h3>Destination Rooms</h3>
+                <div className="room-grid">
+                  {/* Default Rooms */}
+                  {DEFAULT_DESTINATION_ROOMS.map(room => (
+                    <button
+                      key={`default-${room}`}
+                      type="button"
+                      className={`room-btn default ${formData.destinationRooms.includes(room) ? 'selected' : ''}`}
+                      onClick={() => handleDestinationToggle(room)}
+                    >
+                      {room}
+                    </button>
+                  ))}
+                  
+                  {/* Admin-Added Rooms */}
+                  {rooms.filter(room => room.status === 'available').map(room => (
+                    <button
+                      key={`admin-${room.id}`}
+                      type="button"
+                      className={`room-btn admin ${formData.destinationRooms.includes(room.name) ? 'selected' : ''}`}
+                      onClick={() => handleDestinationToggle(room.name)}
+                    >
+                      {room.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
           <div className="form-section">
             <h3>Priority</h3>
@@ -292,7 +330,7 @@ function TaskCreationModal({ isOpen, onClose, onSubmit }: TaskCreationModalProps
           </div>
 
             <button type="submit" className="submit-btn">
-              Submit Delivery Request
+              {taskType === 'deliver' ? 'Submit Delivery Request' : 'Submit Navigation Task'}
             </button>
           </form>
         )}

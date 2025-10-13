@@ -21,6 +21,7 @@ function MapContainer() {
 	const [task, setTask] = useState<Task | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
+	const [zoom, setZoom] = useState(1);
 
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -108,6 +109,7 @@ function MapContainer() {
 		}
 
 		ctx.translate(offset.x, offset.y); // Apply map offset
+		ctx.scale(zoom, zoom); // Apply zoom
 
 		// --- Draw walls ---
 		ctx.fillStyle = '#6c757d';
@@ -164,11 +166,11 @@ function MapContainer() {
 		}
 
 		ctx.restore();
-	}, [mapData, path, position, task, offset]);
+	}, [mapData, path, position, task, offset, zoom]);
 
 	useEffect(() => {
 		draw();
-	}, [draw, offset, mapData, path, position, task]);
+	}, [draw, offset, mapData, path, position, task, zoom]);
 		
 	// --- Resize and redraw on window resize ---
 	useEffect(() => {
@@ -218,16 +220,37 @@ function MapContainer() {
 			isDraggingRef.current = false;
 		};
 
+		const handleWheel = (e: WheelEvent) => {
+			e.preventDefault();
+			const delta = e.deltaY > 0 ? 0.9 : 1.1;
+			setZoom(prev => Math.max(0.3, Math.min(3, prev * delta)));
+		};
+
 		canvas.addEventListener('mousedown', handleMouseDown);
+		canvas.addEventListener('wheel', handleWheel, { passive: false });
 		window.addEventListener('mousemove', handleMouseMove);
 		window.addEventListener('mouseup', handleMouseUp);
 
 		return () => {
 			canvas.removeEventListener('mousedown', handleMouseDown);
+			canvas.removeEventListener('wheel', handleWheel);
 			window.removeEventListener('mousemove', handleMouseMove);
 			window.removeEventListener('mouseup', handleMouseUp);
 		};
 	}, [mapData]);
+
+	const handleZoomIn = () => {
+		setZoom(prev => Math.min(prev * 1.2, 3)); // Max zoom 3x
+	};
+
+	const handleZoomOut = () => {
+		setZoom(prev => Math.max(prev / 1.2, 0.3)); // Min zoom 0.3x
+	};
+
+	const handleResetZoom = () => {
+		setZoom(1);
+		setOffset({ x: 0, y: 0 });
+	};
 
 	return (
 		<div className="widget map-container light-shadow">
@@ -241,6 +264,17 @@ function MapContainer() {
 						height={mapData.height}
 						
 						/>
+						<div className="map-controls">
+							<button className="zoom-btn zoom-in" onClick={handleZoomIn} title="Zoom In">
+								+
+							</button>
+							<button className="zoom-btn zoom-out" onClick={handleZoomOut} title="Zoom Out">
+								−
+							</button>
+							<button className="zoom-btn zoom-reset" onClick={handleResetZoom} title="Reset View">
+								⌂
+							</button>
+						</div>
 					</div>
 				)
 			}

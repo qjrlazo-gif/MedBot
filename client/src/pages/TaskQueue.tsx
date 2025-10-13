@@ -9,6 +9,7 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 
 import { timeAgo } from '../utils/Utils';
 import TaskCreationModal from '../components/TaskCreationModal';
+import TaskTypeModal from '../components/TaskTypeModal';
 import DatabaseViewer from '../components/DatabaseViewer';
 import { useAuth } from '../contexts/AuthContext';
 import { FirestoreDB } from '../utils/firebaseUtils';
@@ -33,7 +34,9 @@ function TaskQueue() {
 	const [sortBy, setSortBy] = useState<SortType>('time');
 	const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 	const [showHistory, setShowHistory] = useState(false);
+	const [isTaskTypeModalOpen, setIsTaskTypeModalOpen] = useState(false);
 	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [selectedTaskType, setSelectedTaskType] = useState<'deliver' | 'go'>('deliver');
 	const [isDatabaseViewerOpen, setIsDatabaseViewerOpen] = useState(false);
 	const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
 	const [isBulkMode, setIsBulkMode] = useState(false);
@@ -149,14 +152,22 @@ function TaskQueue() {
 		try {
 			console.log('Adding task with data:', taskData);
 			
+			let taskName: string;
+			if (taskData.taskType === 'deliver') {
+				taskName = `Deliver ${taskData.selectedSupplies.join(', ')} to ${taskData.destinationRooms.join(', ')}`;
+			} else {
+				taskName = `Go to ${taskData.sourceLocation}`;
+			}
+			
 			const taskToAdd = {
-				name: `Deliver ${taskData.selectedSupplies.join(', ')} to ${taskData.destinationRooms.join(', ')}`,
+				name: taskName,
 				priority: (taskData.priority === 'URGENT' ? 'High' : taskData.priority === 'NORMAL' ? 'Medium' : 'Low') as 'Low' | 'Medium' | 'High',
 				timeAdded: new Date().toISOString(),
 				createdAt: new Date().toISOString(),
 				source: { x: 0, y: 0 },
 				destination: { x: 100, y: 100 },
-				status: 'in-queue' as const
+				status: 'in-queue' as const,
+				taskType: taskData.taskType
 			};
 			
 			console.log('Task to add:', taskToAdd);
@@ -247,6 +258,12 @@ function TaskQueue() {
 		setSelectedTasks([]);
 	};
 
+	const handleTaskTypeSelect = (taskType: 'deliver' | 'go') => {
+		setSelectedTaskType(taskType);
+		setIsTaskTypeModalOpen(false);
+		setIsModalOpen(true);
+	};
+
 	return (
 		<div className="page task-queue">
 			<div className="controls">
@@ -278,7 +295,7 @@ function TaskQueue() {
 					)}
 				</button>
 				<div className='spacer'></div>
-				<button className='add-task-btn' onClick={() => setIsModalOpen(true)}>
+				<button className='add-task-btn' onClick={() => setIsTaskTypeModalOpen(true)}>
 					<AddIcon fontSize="small" />
 					<span>Add Task</span>
 				</button>
@@ -362,10 +379,17 @@ function TaskQueue() {
 
 			{showHistory && <p className="history">History view (placeholder)</p>}
 			
+			<TaskTypeModal 
+				isOpen={isTaskTypeModalOpen}
+				onClose={() => setIsTaskTypeModalOpen(false)}
+				onTaskTypeSelect={handleTaskTypeSelect}
+			/>
+			
 			<TaskCreationModal 
 				isOpen={isModalOpen}
 				onClose={() => setIsModalOpen(false)}
 				onSubmit={handleTaskSubmit}
+				taskType={selectedTaskType}
 			/>
 			
 			{isAdmin && (
