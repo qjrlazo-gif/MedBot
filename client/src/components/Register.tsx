@@ -18,6 +18,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [passwordValidation, setPasswordValidation] = useState({
     length: false,
     uppercase: false,
@@ -133,6 +134,9 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
         formData.role,
         formData.department || undefined
       );
+      
+      // Show success message
+      setSuccess(true);
     } catch (error: any) {
       console.error('Registration error:', error);
       setError(getErrorMessage(error.code));
@@ -170,6 +174,21 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
           </div>
         )}
 
+        {success && (
+          <div className="success-message">
+            <h3>✅ Account Created Successfully!</h3>
+            <p>Your account is ready. You can now log in.</p>
+            <button 
+              type="button" 
+              onClick={onSwitchToLogin}
+              className="login-button"
+            >
+              Go to Login
+            </button>
+          </div>
+        )}
+
+        {!success && (
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label htmlFor="displayName">Full Name *</label>
@@ -299,6 +318,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
+        )}
 
         <div className="auth-footer">
           <p>
