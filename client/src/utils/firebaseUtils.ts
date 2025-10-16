@@ -39,6 +39,7 @@ export interface TaskData {
   timeAdded?: string;
   robotStatus?: string;
   progress?: number;
+  updatedAt?: string;
 }
 
 export interface TaskQueueItem {

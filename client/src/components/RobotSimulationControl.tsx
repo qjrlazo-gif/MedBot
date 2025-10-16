@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { FirestoreDB } from '../utils/firebaseUtils';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
@@ -17,10 +17,10 @@ interface Task {
 
 function RobotSimulationControl() {
   const { isAdmin } = useAuth();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [_tasks, setTasks] = useState<Task[]>([]);
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationSpeed, setSimulationSpeed] = useState(3000);
-  const [currentTask, setCurrentTask] = useState<Task | null>(null);
+  const [_currentTask, setCurrentTask] = useState<Task | null>(null);
   const tasksRef = useRef<Task[]>([]);
   const currentTaskRef = useRef<Task | null>(null);
 
