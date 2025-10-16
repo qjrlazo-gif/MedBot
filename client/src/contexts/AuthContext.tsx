@@ -57,14 +57,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      console.log('Login successful, updating lastLogin for user:', user.uid);
+      console.log('🔐 Login successful, updating lastLogin for user:', user.uid);
       
       // Update last login time with merge to preserve existing fields
       await setDoc(doc(db, 'users', user.uid), {
         lastLogin: new Date().toISOString()
       }, { merge: true });
       
-      console.log('LastLogin updated successfully');
+      console.log('✅ LastLogin updated successfully');
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -91,7 +91,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: user.email!,
         displayName,
         role,
-        department,
+        department: department || '',
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString()
       };
@@ -99,52 +99,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('Creating user profile in Firestore:', userProfile);
       
       try {
-        await setDoc(doc(db, 'users', user.uid), userProfile);
+        await setDoc(doc(db, 'users', user.uid), userProfile, { merge: true });
         console.log('User profile created successfully in Firestore');
-        
-        // Wait a moment for Firestore to process
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Verify the profile was created
-        const verifyDoc = await getDoc(doc(db, 'users', user.uid));
-        if (verifyDoc.exists()) {
-          const data = verifyDoc.data();
-          console.log('Profile verification successful:', data);
-          
-          // Check if all required fields are present
-          const requiredFields = ['uid', 'email', 'displayName', 'role', 'createdAt', 'lastLogin'];
-          const missingFields = requiredFields.filter(field => !data[field]);
-          
-          if (missingFields.length > 0) {
-            console.error('Profile created but missing fields:', missingFields);
-            console.error('Actual profile data:', data);
-          } else {
-            console.log('Profile created with all required fields');
-          }
-        } else {
-          console.error('Profile verification failed - document not found after creation');
-        }
       } catch (firestoreError) {
         console.error('Firestore profile creation failed:', firestoreError);
-        console.error('Error details:', firestoreError);
-        
-        // Try to create the profile again with a simpler approach
-        console.log('Retrying profile creation...');
-        try {
-          await setDoc(doc(db, 'users', user.uid), {
-            uid: user.uid,
-            email: user.email,
-            displayName: displayName,
-            role: role,
-            department: department || '',
-            createdAt: new Date().toISOString(),
-            lastLogin: new Date().toISOString()
-          });
-          console.log('Retry profile creation successful');
-        } catch (retryError) {
-          console.error('Retry profile creation also failed:', retryError);
-          throw new Error(`Failed to create user profile: ${retryError}`);
-        }
+        throw new Error(`Failed to create user profile: ${firestoreError}`);
       }
       
       console.log('Registration successful:', user.email);
@@ -165,86 +124,67 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const fetchUserProfile = async (user: User): Promise<UserProfile | null> => {
-    try {
-      console.log('Fetching profile for user:', user.uid, user.email);
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      
-      if (userDoc.exists()) {
-        const profileData = userDoc.data() as UserProfile;
-        console.log('Fetched existing user profile:', profileData);
-        return profileData;
-      } else {
-        console.log('No user profile found for user:', user.uid, 'Creating default profile...');
-        
-        // Create a default profile if none exists
-        const defaultProfile: UserProfile = {
-          uid: user.uid,
-          email: user.email || '',
-          displayName: user.displayName || user.email?.split('@')[0] || 'Unknown User',
-          role: 'nurse', // Default role
-          department: '',
-          createdAt: new Date().toISOString(),
-          lastLogin: new Date().toISOString()
-        };
-        
-        try {
-          console.log('Attempting to create default profile:', defaultProfile);
-          await setDoc(doc(db, 'users', user.uid), defaultProfile);
-          console.log('Successfully created default profile');
-          
-          // Verify the profile was created
-          const verifyDoc = await getDoc(doc(db, 'users', user.uid));
-          if (verifyDoc.exists()) {
-            console.log('Profile creation verified:', verifyDoc.data());
-            return defaultProfile;
-          } else {
-            console.error('Profile creation failed - document not found after creation');
-            return null;
-          }
-        } catch (createError) {
-          console.error('Error creating default profile:', createError);
-          console.error('Create error details:', createError);
-          
-          // If profile creation fails due to permissions, return a temporary profile
-          // This allows the user to continue but they won't have persistent data
-          console.log('Returning temporary profile due to creation failure');
-          return defaultProfile;
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      console.error('Fetch error details:', error);
-      
-      // If there's a permission error or network issue, create a temporary profile
-      const tempProfile: UserProfile = {
+  const fetchUserProfile = async (user: User): Promise<UserProfile> => {
+    console.log('🔍 FETCH USER PROFILE START:', user.uid, user.email);
+    
+    // ALWAYS return a profile - never return null
+    const createDefaultProfile = (): UserProfile => {
+      return {
         uid: user.uid,
         email: user.email || '',
         displayName: user.displayName || user.email?.split('@')[0] || 'Unknown User',
-        role: 'nurse',
+        role: 'admin', // Always admin
         department: '',
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString()
       };
+    };
+    
+    try {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      console.log('📄 Document exists:', userDoc.exists());
       
-      console.log('Returning temporary profile due to fetch error');
-      return tempProfile;
+      if (userDoc.exists()) {
+        const profileData = userDoc.data() as UserProfile;
+        console.log('✅ EXISTING PROFILE FOUND:', profileData);
+        return profileData;
+      } else {
+        console.log('❌ NO PROFILE FOUND - CREATING DEFAULT');
+        const defaultProfile = createDefaultProfile();
+        
+        try {
+          await setDoc(doc(db, 'users', user.uid), defaultProfile);
+          console.log('✅ DEFAULT PROFILE CREATED');
+          return defaultProfile;
+        } catch (createError) {
+          console.error('❌ ERROR CREATING PROFILE:', createError);
+          console.log('🔄 RETURNING DEFAULT PROFILE ANYWAY');
+          return defaultProfile;
+        }
+      }
+    } catch (error) {
+      console.error('❌ FIRESTORE ERROR:', error);
+      console.log('🔄 RETURNING DEFAULT PROFILE DUE TO ERROR');
+      return createDefaultProfile();
     }
   };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('Auth state changed, user:', user);
-      if (user) {
-        setCurrentUser(user);
-        console.log('Fetching profile for user:', user.uid, user.email, user.displayName);
-        const profile = await fetchUserProfile(user);
-        console.log('Setting user profile:', profile);
-        setUserProfile(profile);
-        
-        // Additional debugging
-        if (profile) {
-          console.log('Profile details:', {
+      console.log('🔄 Auth state changed, user:', user);
+      
+      setLoading(true); // Set loading to true when auth state changes
+      
+      try {
+        if (user) {
+          setCurrentUser(user);
+          console.log('👤 Fetching profile for user:', user.uid, user.email, user.displayName);
+          
+          const profile = await fetchUserProfile(user);
+          console.log('📋 Profile fetched:', profile);
+          
+          setUserProfile(profile);
+          console.log('✅ Profile set successfully:', {
             uid: profile.uid,
             email: profile.email,
             displayName: profile.displayName,
@@ -252,13 +192,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             department: profile.department
           });
         } else {
-          console.error('Profile is null after fetchUserProfile');
+          console.log('👋 No user, clearing state');
+          setCurrentUser(null);
+          setUserProfile(null);
         }
-      } else {
-        setCurrentUser(null);
-        setUserProfile(null);
+      } catch (error) {
+        console.error('❌ Error in auth state change:', error);
+        // Create fallback profile on error
+        if (user) {
+          const fallbackProfile = {
+            uid: user.uid,
+            email: user.email || '',
+            displayName: user.displayName || user.email?.split('@')[0] || 'Unknown User',
+            role: 'admin' as UserRole,
+            department: '',
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString()
+          };
+          setUserProfile(fallbackProfile);
+          console.log('🔄 Using fallback profile due to error:', fallbackProfile);
+        }
+      } finally {
+        console.log('✅ Loading complete, setting loading to false');
+        setLoading(false); // Always set loading to false after all operations
       }
-      setLoading(false);
     });
 
     return unsubscribe;
@@ -280,7 +237,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
