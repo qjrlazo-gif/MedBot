@@ -129,10 +129,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     // ALWAYS return a profile - never return null
     const createDefaultProfile = (): UserProfile => {
+      // Use email prefix as display name if available, otherwise use a more friendly default
+      const emailPrefix = user.email?.split('@')[0] || '';
+      const displayName = user.displayName || emailPrefix || 'New User';
+      
       return {
         uid: user.uid,
         email: user.email || '',
-        displayName: user.displayName || user.email?.split('@')[0] || 'Unknown User',
+        displayName: displayName,
         role: 'admin', // Always admin
         department: '',
         createdAt: new Date().toISOString(),
@@ -200,10 +204,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('❌ Error in auth state change:', error);
         // Create fallback profile on error
         if (user) {
+          const emailPrefix = user.email?.split('@')[0] || '';
+          const displayName = user.displayName || emailPrefix || 'New User';
+          
           const fallbackProfile = {
             uid: user.uid,
             email: user.email || '',
-            displayName: user.displayName || user.email?.split('@')[0] || 'Unknown User',
+            displayName: displayName,
             role: 'admin' as UserRole,
             department: '',
             createdAt: new Date().toISOString(),

@@ -17,9 +17,9 @@ function Header({ title, userProfile, onLogout }: HeaderProps) {
 				{userProfile ? (
 					<div className="user-info">
 						<div className="user-details">
-							<span className="user-name">{userProfile.displayName || 'Unknown User'}</span>
+							<span className="user-name">{userProfile.displayName || 'New User'}</span>
 							<span className={`user-role role-${userProfile.role}`}>
-								{userProfile.role || 'Unknown Role'}
+								{userProfile.role ? userProfile.role.toUpperCase() : 'ADMIN'}
 							</span>
 							{userProfile.department && (
 								<span className="user-department">{userProfile.department}</span>
@@ -35,6 +35,7 @@ function Header({ title, userProfile, onLogout }: HeaderProps) {
 					<div className="user-info">
 						<div className="user-details">
 							<span className="user-name">Loading...</span>
+							<span className="user-role">LOADING...</span>
 						</div>
 						{onLogout && (
 							<button className="logout-btn" onClick={onLogout}>
